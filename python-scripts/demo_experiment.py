@@ -34,7 +34,7 @@ if params['device name'] == 'Epoc':
 elif params['device name'] == 'Enobio 8CH':
     indexes_channel = [0,1,2,3,4,5,6,7]
 
-ch_names = [params['names of channels'][i] for i in indexes_channel]
+ch_names = [i-2 for i in indexes_channel]
 
 # Filter
 b, a = butter_bandpass(4.0, 35.0, fs, order=4)
@@ -71,31 +71,24 @@ try:
         eeg_buffer = BCIw.update_buffer(eeg_buffer, eeg_data)[0] # Update EEG buffer
 
         # filter here
-
+        eeg_buffer_f = lfilter(b, a, eeg_buffer, axis=0)
+        
         # Compute PSD for buffer
-        eeg_buffer_psd = experiment.psd_fft(eeg_buffer, fs)[0]
-
-        y = lfilter(b, a, eeg_buffer.T)
-        yt = y.T
+        eeg_buffer_psd = experiment.psd_fft(eeg_buffer_f, fs)[0]
+        
         # Select the last win_test_secs seconds to perform task
-        test_eeg = y[:, (-win_test_secs*fs):]
-        test_eegt = test_eeg.T
-
-
+        test_eeg = eeg_buffer_f[(-win_test_secs*fs):,:]
+        
         """ 2- COMPUTE FEATURES """
-        ft = np.mean(test_eeg)
         value = CalculaCCA(test_eeg.T)
-
 
         """ 3- VISUALIZE THE RAW EEG AND THE FEATURES """
         plotter_time.update_plot(eeg_buffer) # Plot EEG buffer in time domain
         plotter_freq.update_plot(np.log10(eeg_buffer_psd)) # Plot EEG buffer in freq domain
-        plt.pause(0.00001)
+        plt.pause(0.01)
 
         """ 4- VISUALIZE RESULTS """
         print(str(value) + ' Hz')
-
-
 
 except KeyboardInterrupt:
     mules_client.disconnect() # Close connection

@@ -145,7 +145,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   frameRate: 75
-  stimulusDesireFrequency: 1
+  stimulusDesireFrequency: 10
   stimulusAproxFrequency: 0
   stimulusRealFrequency: 0
 --- !u!54 &213950326

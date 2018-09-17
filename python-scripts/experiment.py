@@ -8,7 +8,34 @@ import time
 import socket
 import array
 import struct
+import numpy as np
 
+def nextpow2(i):
+    """
+    Find the next power of 2 for number i
+    """
+    n = 1
+    while n < i:
+        n *= 2
+    return n
+
+def psd_fft(x, fs):
+    '''
+    x has to have the shape [samples, channels]
+    '''
+    # 1. Compute the PSD
+    winSampleLength, nbCh = x.shape
+
+    # Apply Hamming window
+    w = np.hamming(winSampleLength)
+    x = x - np.mean(x, axis=0)  # Remove offset
+    x = (x.T*w).T
+
+    NFFT = nextpow2(winSampleLength)
+    Y = np.fft.fft(x, n=NFFT, axis=0)/winSampleLength
+    PSD = 2*np.abs(Y[0:int(NFFT/2), :])
+    f_ax = fs/2*np.linspace(0, 1, int(NFFT/2))
+    return PSD, f_ax
 
 def tone(f=500, d=500):
     """

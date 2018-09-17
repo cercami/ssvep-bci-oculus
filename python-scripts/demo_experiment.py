@@ -8,6 +8,7 @@ import numpy as np      # Module that simplifies computations on matrices
 import bci_workshop_tools as BCIw # Bunch of useful functions for the workshop
 import experiment
 from python_VR_version import CalculaCCA
+import matplotlib.pyplot as plt # Module used for plotting
 
 # MuLES connection parameters    
 mules_ip = '127.0.0.1'
@@ -24,13 +25,23 @@ eeg_buffer_secs = 15  # Size of the EEG data buffer used for plotting the
 win_test_secs = 3     # Length of the window used for computing the features 
                       # (in seconds)
 shift_secs = 0.5      # Shift between two consecutive windows (in seconds)
-indexes_channel = [1,2,3,4]     # Index of the channnel to be used 
-                                 
+indexes_channel = [4,5]     # Index of the channnel to be used 
+           
+# Name of our channel for plotting purposes
+ch_names = [params['names of channels'][i] for i in indexes_channel]
+                      
 #%% Initialize the buffers for storing raw EEG and features
 # Initialize raw EEG data buffer (for plotting)
 eeg_buffer = np.zeros((fs*eeg_buffer_secs, len(indexes_channel))) 
 experiment.tone(500,500)
-                                            
+# compute PSD for eeg_buffer
+[eeg_buffer_psd, f_ax] = experiment.psd_fft(eeg_buffer, fs) 
+           
+# Initialize the plots
+plotter_time = BCIw.DataPlotter(fs * eeg_buffer_secs, ch_names, fs)
+plotter_freq = BCIw.DataPlotter(eeg_buffer_psd.shape[0], ch_names, 1/f_ax[1])
+
+                                 
 #%% Start pulling data    
 mules_client.flushdata()  # Flush old data from MuLES       
   
@@ -47,6 +58,11 @@ try:
         eeg_data = mules_client.getdata(shift_secs, False)   # Obtain EEG data from MuLES
         eeg_data = eeg_data[:, indexes_channel]              # Removes unwanted channels            
         eeg_buffer = BCIw.update_buffer(eeg_buffer, eeg_data)[0] # Update EEG buffer
+       
+        # filter here
+        
+        # Compute PSD for buffer
+        eeg_buffer_psd = experiment.psd_fft(eeg_buffer, fs)[0]
         
         # Select the last win_test_secs seconds to perform task
         test_eeg = eeg_buffer[(-win_test_secs*fs): , :]
@@ -57,6 +73,11 @@ try:
         
        
         """ 3- VISUALIZE THE RAW EEG AND THE FEATURES """       
+        plotter_time.update_plot(eeg_buffer) # Plot EEG buffer in time domain
+        plotter_freq.update_plot(np.log10(eeg_buffer_psd)) # Plot EEG buffer in freq domain
+        plt.pause(0.00001)
+
+        """ 4- VISUALIZE RESULTS """               
         print(str(value) + ' Hz')
         print(result)
         
